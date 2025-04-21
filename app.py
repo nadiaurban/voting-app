@@ -1,38 +1,63 @@
 import streamlit as st
+import json
+import os
 
-# --- Initialize session state ---
+# --- Constants & Countries ---
+VOTE_FILE = "votes.json"
+COUNTRIES = [
+    "Russia", "Germany", "Italy", "New Zealand",
+    "Netherlands", "Saudi Arabia", "Japan", "Serbia"
+]
+
+# --- Persistence Helpers ---
+def load_votes():
+    if os.path.exists(VOTE_FILE):
+        try:
+            with open(VOTE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            pass
+    # initialize if missing or corrupt
+    votes = {c: 0 for c in COUNTRIES}
+    save_votes(votes)
+    return votes
+
+def save_votes(votes):
+    with open(VOTE_FILE, "w", encoding="utf-8") as f:
+        json.dump(votes, f, ensure_ascii=False, indent=2)
+
+# --- Initialize session state from disk ---
 if 'votes' not in st.session_state:
-    st.session_state.votes = {c: 0 for c in [
-        "Russia", "Germany", "Italy", "New Zealand",
-        "Netherlands", "Saudi Arabia", "Japan", "Serbia"
-    ]}
+    st.session_state.votes = load_votes()
 if 'vote_cast' not in st.session_state:
     st.session_state.vote_cast = False
 if 'finished' not in st.session_state:
     st.session_state.finished = False
 
-# --- Vote callbacks ---
+# --- Callbacks ---
 def cast_vote(country: str):
     st.session_state.votes[country] += 1
+    save_votes(st.session_state.votes)
     st.session_state.vote_cast = True
 
 def next_vote():
     st.session_state.vote_cast = False
 
-# --- Sidebar (Teacher controls) ---
-st.sidebar.header("Teacher Panel")
-
-if st.sidebar.button("Reset votes"):
-    for country in st.session_state.votes:
-        st.session_state.votes[country] = 0
+def reset_votes():
+    st.session_state.votes = {c: 0 for c in COUNTRIES}
+    save_votes(st.session_state.votes)
     st.session_state.vote_cast = False
     st.session_state.finished = False
-    st.sidebar.success("✅ Votes have been reset.")
 
+# --- Sidebar (Teacher Panel) ---
+st.sidebar.header("Teacher Panel")
+if st.sidebar.button("Reset votes"):
+    reset_votes()
+    st.sidebar.success("✅ Votes have been reset.")
 if st.sidebar.button("Finish vote"):
     st.session_state.finished = True
 
-# --- If finished: show results & winner ---
+# --- Finished: Show Results & Winner ---
 if st.session_state.finished:
     st.header("🏆 Election Results")
     for country, count in st.session_state.votes.items():
@@ -47,7 +72,7 @@ if st.session_state.finished:
         st.success(f"It's a tie between: {', '.join(winners)} ({max_votes} votes each)!")
     st.stop()
 
-# --- Voting screen ---
+# --- Voting Screen ---
 st.title("🌐 International Day: Vote for the Best Class")
 
 if not st.session_state.vote_cast:
@@ -55,10 +80,9 @@ if not st.session_state.vote_cast:
         "Russia": "ru", "Germany": "de", "Italy": "it", "New Zealand": "nz",
         "Netherlands": "nl", "Saudi Arabia": "sa", "Japan": "jp", "Serbia": "rs"
     }
-    countries = list(codes.keys())
     for row in range(2):
         cols = st.columns(4)
-        for idx, country in enumerate(countries[row*4:(row+1)*4]):
+        for idx, country in enumerate(COUNTRIES[row*4:(row+1)*4]):
             with cols[idx]:
                 flag_url = f"https://flagcdn.com/w160/{codes[country]}.png"
                 st.image(flag_url, use_container_width=True)
@@ -72,19 +96,14 @@ else:
     st.markdown("### 🥳 Thank you for your vote!")
     st.button("Next vote", on_click=next_vote)
 
-
-# Separator Line
+# --- Footer & Branding ---
 st.markdown("<hr style='border: 1px solid #A02040;'>", unsafe_allow_html=True)
-
-# Footer Text
 st.markdown(
     """
     <div style='text-align: left;'>
-        <p>©Created by Nadia Urban for Shanghai Thomas School.<br>
+        <p>© Created by Nadia Urban for Shanghai Thomas School</p>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-# School Logo
 st.image("school_logo.png", width=150)
