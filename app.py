@@ -51,11 +51,21 @@ def reset_votes():
 
 # --- Sidebar (Teacher Panel) ---
 st.sidebar.header("Teacher Panel")
+
 if st.sidebar.button("Reset votes"):
     reset_votes()
     st.sidebar.success("✅ Votes have been reset.")
+
 if st.sidebar.button("Finish vote"):
     st.session_state.finished = True
+
+st.sidebar.markdown("---")
+st.sidebar.download_button(
+    label="📥 Download votes.json",
+    data=json.dumps(st.session_state.votes, ensure_ascii=False, indent=2),
+    file_name="votes.json",
+    mime="application/json"
+)
 
 # --- Finished: Show Results & Winner ---
 if st.session_state.finished:
