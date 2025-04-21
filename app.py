@@ -79,12 +79,6 @@ if st.sidebar.button("Finish vote"):
     st.session_state.finished = True
 
 st.sidebar.markdown("---")
-st.sidebar.download_button(
-    label="📥 Download votes.json",
-    data=st.session_state.votes,
-    file_name="votes.json",
-    mime="application/json"
-)
 
 # --- Finished: Show Results & Winner ---
 if st.session_state.finished:
