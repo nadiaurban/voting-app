@@ -1,32 +1,51 @@
-import streamlit as st
-import json
 import os
+import streamlit as st
+from sqlalchemy import create_engine, text
 
 # --- Constants & Countries ---
-VOTE_FILE = "votes.json"
 COUNTRIES = [
     "Russia", "Germany", "Italy", "New Zealand",
     "Netherlands", "Saudi Arabia", "Japan", "Serbia"
 ]
 
-# --- Persistence Helpers ---
+# --- Database setup (Railway provides DATABASE_URL) ---
+DATABASE_URL = os.environ["DATABASE_URL"]
+engine = create_engine(DATABASE_URL, echo=False)
+
+def init_db():
+    """Create the votes table and seed each country if missing."""
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS votes (
+              country TEXT PRIMARY KEY,
+              count   INTEGER NOT NULL
+            );
+        """))
+        for c in COUNTRIES:
+            conn.execute(text("""
+                INSERT INTO votes(country, count)
+                VALUES (:country, 0)
+                ON CONFLICT (country) DO NOTHING;
+            """), {"country": c})
+
 def load_votes():
-    if os.path.exists(VOTE_FILE):
-        try:
-            with open(VOTE_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            pass
-    # initialize if missing or corrupt
-    votes = {c: 0 for c in COUNTRIES}
-    save_votes(votes)
-    return votes
+    """Load current tallies from Postgres into a dict."""
+    init_db()
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT country, count FROM votes")).all()
+    return {r.country: r.count for r in rows}
 
 def save_votes(votes):
-    with open(VOTE_FILE, "w", encoding="utf-8") as f:
-        json.dump(votes, f, ensure_ascii=False, indent=2)
+    """Persist the in‑memory vote dict back to Postgres."""
+    with engine.begin() as conn:
+        for country, cnt in votes.items():
+            conn.execute(text("""
+                UPDATE votes
+                SET count = :count
+                WHERE country = :country;
+            """), {"count": cnt, "country": country})
 
-# --- Initialize session state from disk ---
+# --- Initialize session state from DB ---
 if 'votes' not in st.session_state:
     st.session_state.votes = load_votes()
 if 'vote_cast' not in st.session_state:
@@ -62,7 +81,7 @@ if st.sidebar.button("Finish vote"):
 st.sidebar.markdown("---")
 st.sidebar.download_button(
     label="📥 Download votes.json",
-    data=json.dumps(st.session_state.votes, ensure_ascii=False, indent=2),
+    data=st.session_state.votes,
     file_name="votes.json",
     mime="application/json"
 )
