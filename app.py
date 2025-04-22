@@ -130,3 +130,4 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.image("school_logo.png", width=150)
+# trigger rebuild
