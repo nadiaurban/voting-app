@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 from sqlalchemy import create_engine, text
+from sqlalchemy.pool import NullPool
 
 # --- Constants & Countries ---
 COUNTRIES = [
@@ -8,9 +9,9 @@ COUNTRIES = [
     "Netherlands", "Saudi Arabia", "Japan", "Serbia"
 ]
 
-# --- Database setup (Railway provides DATABASE_URL) ---
-DATABASE_URL = os.environ["DATABASE_URL"]
-engine = create_engine(DATABASE_URL, echo=False)
+# --- Database setup (Supabase database) ---
+DATABASE_URL = st.secrets["DATABASE_URL"]
+engine = create_engine(DATABASE_URL, echo=False, poolclass=NullPool)
 
 def init_db():
     """Create the votes table and seed each country if missing."""
