@@ -5,8 +5,9 @@ from sqlalchemy.pool import NullPool
 
 # --- Constants & Countries ---
 COUNTRIES = [
-    "Russia", "Germany", "Italy", "New Zealand",
-    "Netherlands", "Saudi Arabia", "Japan", "Serbia"
+    "Germany", "Japan", "Ireland", "Singapore",
+    "Argentina", "Poland", "Brazil", "Russia",
+    "Thailand", "Turkey", "Greece"
 ]
 
 # --- Database setup (Supabase database) ---
@@ -101,10 +102,19 @@ st.title("🌐 International Day: Vote for the Best Class")
 
 if not st.session_state.vote_cast:
     codes = {
-        "Russia": "ru", "Germany": "de", "Italy": "it", "New Zealand": "nz",
-        "Netherlands": "nl", "Saudi Arabia": "sa", "Japan": "jp", "Serbia": "rs"
-    }
-    for row in range(2):
+    "Germany": "de",
+    "Japan": "jp",
+    "Ireland": "ie",
+    "Singapore": "sg",
+    "Argentina": "ar",
+    "Poland": "pl",
+    "Brazil": "br",
+    "Russia": "ru",
+    "Thailand": "th",
+    "Turkey": "tr",
+    "Greece": "gr"
+}
+    for row in range(3):
         cols = st.columns(4)
         for idx, country in enumerate(COUNTRIES[row*4:(row+1)*4]):
             with cols[idx]:
